@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Text Game</title>
+    <script src="./textGame.js"></script>
+</head>
+
+<body>
+    <style>
+        .text-game-container {
+            display: flex;
+            max-width: 1000px;
+            margin: 120px auto 60px;
+            background: #1e1e1e;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid #333;
+            overflow: hidden;
+            min-height: 500px;
+        }
+
+        .game-main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        #game-output {
+            flex-grow: 1;
+            background: #2c2c2c;
+            color: #d4d4d4;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            resize: none;
+            margin-bottom: 10px;
+            height: 400px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        #game-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #2c2c2c;
+            color: white;
+            font-family: monospace;
+        }
+
+        .input-row button, .sidebar-content button {
+            background: #0b505c;
+            color: white;
+            border: 1px solid #083d46;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .input-row button:hover, .sidebar-content button:hover {
+            background: #0f6c7c;
+        }
+
+        .game-sidebar {
+            width: 300px;
+            background: #252525;
+            border-left: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            transition: margin-right 0.3s ease;
+            position: relative;
+        }
+
+        .sidebar-scroll-area {
+            overflow-y: auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .game-sidebar.collapsed {
+            margin-right: -300px;
+        }
+
+        .sidebar-panel {
+            display: flex;
+            flex-direction: column;
+            border-bottom: 2px solid #111;
+            padding-bottom: 10px;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            background: #333;
+            padding: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sidebar-header:hover {
+            background: #3a3a3a;
+        }
+
+        .toggle-btn {
+            background: #333;
+            border: 1px solid #111;
+            color: #01DAD0;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 5px 10px;
+            left: -40px; /* Position toggle outside when collapsed */
+            border-radius: 4px 0 0 4px;
+            position: absolute;
+            top: 10px;
+            z-index: 10;
+        }
+
+        .sidebar-title {
+            flex-grow: 1;
+            text-align: center;
+            font-weight: bold;
+            color: #01DAD0;
+        }
+
+        .panel-icon {
+            color: #01DAD0;
+            font-size: 0.8em;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-content {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-content.hidden {
+            display: none;
+        }
+
+        .sidebar-content.maximized {
+            position: fixed;
+            top: 10vh;
+            left: 10vw;
+            width: 80vw;
+            height: 80vh;
+            background: #1e1e1e;
+            z-index: 1000;
+            border: 2px solid #01DAD0;
+            box-shadow: 0px 0px 30px rgba(0,0,0,0.8);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .sidebar-content.maximized textarea {
+            flex-grow: 1;
+            height: auto;
+        }
+
+        #save-input, #json-input, #area-input {
+            background: #2c2c2c;
+            color: #d4d4d4;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            resize: vertical;
+            margin-bottom: 10px;
+            min-height: 200px;
+        }
+
+        #area-select {
+            padding: 8px;
+            background: #2c2c2c;
+            color: white;
+            border: 1px solid #444;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .area-select-row {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .area-select-row select {
+            flex-grow: 1;
+        }
+
+        .icon-btn {
+            background: #333 !important;
+            border: 1px solid #444 !important;
+            color: white !important;
+            padding: 0 12px !important;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .icon-btn:hover {
+            background: #4a4a4a !important;
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+        }
+        
+        .panel-actions button {
+            flex-grow: 1;
+        }
+    </style>
+
+    <div class="text-game-container">
+        <div class="game-main">
+            <textarea id="game-output" readonly></textarea>
+            <div class="input-row">
+                <input type="text" id="game-input" placeholder="Type a command (e.g. 'help')..." autofocus>
+                <button onclick="submitCommand()">Send</button>
+            </div>
+        </div>
+        
+        <div class="game-sidebar" id="sidebar">
+            <button class="toggle-btn" onclick="toggleSidebar()" id="toggle-btn">&#9654;</button>
+
+            <div class="sidebar-scroll-area">
+                <div class="sidebar-panel">
+                    <div class="sidebar-header" onclick="togglePanel('save-panel', 'save-icon')">
+                        <div class="sidebar-title">Live Save State</div>
+                        <div class="panel-icon" id="save-icon">&#9660;</div>
+                    </div>
+                    <div class="sidebar-content" id="save-panel">
+                        <textarea id="save-input" placeholder="Live game memory will appear here..."></textarea>
+                        <div class="panel-actions">
+                            <button onclick="toggleMaximize('save-panel', this)">Maximize</button>
+                            <button onclick="applySaveEditor()">Apply Save</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-panel">
+                    <div class="sidebar-header" onclick="togglePanel('json-panel', 'json-icon')">
+                        <div class="sidebar-title">JSON Loader</div>
+                        <div class="panel-icon" id="json-icon">&#9650;</div>
+                    </div>
+                    <div class="sidebar-content hidden" id="json-panel">
+                        <textarea id="json-input" placeholder="Paste your loader JSON here..."></textarea>
+                        <div class="panel-actions">
+                            <button onclick="toggleMaximize('json-panel', this)">Maximize</button>
+                            <button onclick="loadGameFromJson()">Load Game</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-panel">
+                    <div class="sidebar-header" onclick="togglePanel('area-panel', 'area-icon')">
+                        <div class="sidebar-title">Area Editor</div>
+                        <div class="panel-icon" id="area-icon">&#9650;</div>
+                    </div>
+                    <div class="sidebar-content hidden" id="area-panel">
+                        <div class="area-select-row">
+                            <select id="area-select" onchange="loadAreaToEditor()">
+                                <option value="">Select an Area...</option>
+                            </select>
+                            <button class="icon-btn" onclick="createNewArea()" title="Create New Area">+</button>
+                            <button class="icon-btn" onclick="deleteSelectedArea()" title="Delete Selected Area">-</button>
+                        </div>
+                        <textarea id="area-input" placeholder="Area JSON will appear here..."></textarea>
+                        <div class="panel-actions">
+                            <button onclick="toggleMaximize('area-panel', this)">Maximize</button>
+                            <button onclick="saveAreaFromEditor()">Apply Area</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <center>
+            <a href="https://github.com/SkySlicer500/TextGameMaker/">GitHub Documentation</href>
+            </center>
+            <br>
+        </div>
+    </div>
+
+    <script>
+        // UI Logic
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const btn = document.getElementById('toggle-btn');
+            if (sidebar.classList.contains('collapsed')) {
+                sidebar.classList.remove('collapsed');
+                btn.innerHTML = '&#9654;';
+            } else {
+                sidebar.classList.add('collapsed');
+                btn.innerHTML = '&#9664;';
+            }
+        }
+
+        function togglePanel(panelId, iconId) {
+            const panel = document.getElementById(panelId);
+            const icon = document.getElementById(iconId);
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                icon.innerHTML = '&#9660;'; // Down arrow
+            } else {
+                panel.classList.add('hidden');
+                icon.innerHTML = '&#9650;'; // Up arrow
+            }
+        }
+
+        function toggleMaximize(panelId, btn) {
+            const panel = document.getElementById(panelId);
+            if (panel.classList.contains('maximized')) {
+                panel.classList.remove('maximized');
+                btn.textContent = 'Maximize';
+            } else {
+                panel.classList.add('maximized');
+                btn.textContent = 'Minimize Window';
+            }
+        }
+
+        // Hooking into textGame.js
+        window.resolveInput = null;
+        
+        function submitCommand() {
+            const inputField = document.getElementById('game-input');
+            const val = inputField.value;
+            inputField.value = '';
+            
+            // Log the command to output
+            output("> " + val);
+            
+            // Resolve the blocked input() promise in textGame.js
+            if (window.resolveInput) {
+                let res = window.resolveInput;
+                window.resolveInput = null;
+                res(val);
+            }
+        }
+
+        // Allow pressing Enter to send command
+        document.getElementById('game-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                submitCommand();
+            }
+        });
+
+        // Save Editor Logic
+        function updateSaveEditor() {
+            if (typeof inventory !== 'undefined') {
+                const saveState = {
+                    "inventory": inventory,
+                    "allAreas": allAreas,
+                    "currentArea": currentArea,
+                    "currentRoom": currentRoom,
+                    "currentInventory": currentInventory
+                };
+                // Only update if it's not currently maximized so we don't overwrite user mid-edit
+                const panel = document.getElementById('save-panel');
+                if (!panel.classList.contains('maximized')) {
+                    document.getElementById('save-input').value = JSON.stringify(saveState, null, 4);
+                }
+            }
+        }
+
+        function applySaveEditor() {
+            try {
+                const parsed = JSON.parse(document.getElementById('save-input').value);
+                // Assign to global variables directly attached to window for textGame.js access
+                window.inventory = parsed.inventory;
+                window.allAreas = parsed.allAreas;
+                window.currentArea = parsed.currentArea;
+                window.currentRoom = parsed.currentRoom;
+                window.currentInventory = parsed.currentInventory;
+                output("Live save state successfully overwritten from memory editor!");
+            } catch (e) {
+                output("Failed to apply save state: Invalid JSON! (" + e.message + ")");
+            }
+        }
+
+        // Override input and output from textGame.js
+        window.input = function() {
+            // Right as it asks for input, the engine has finished processing the last loop
+            // Perfect time to dump live memory into the editor
+            updateSaveEditor();
+
+            return new Promise(resolve => {
+                window.resolveInput = resolve;
+            });
+        };
+
+        window.output = function(...args) {
+            const outBox = document.getElementById('game-output');
+            // If the last argument is undefined/null because of a trailing comma, filter it
+            const str = args.filter(a => a !== undefined).join(' ');
+            outBox.value += str + '\n';
+            outBox.scrollTop = outBox.scrollHeight;
+        };
+
+        // Load Game logic
+        function loadGameFromJson() {
+            const jsonStr = document.getElementById('json-input').value;
+            if (!jsonStr.trim()) {
+                output("Please paste valid JSON into the menu.");
+                return;
+            }
+            try {
+                // We store it globally so textGame.js can access it instead of fetching
+                window.gameLoaderJson = JSON.parse(jsonStr);
+                output("==================================");
+                output("JSON Loaded. Starting game...");
+                output("==================================");
+                
+                populateAreaDropdown();
+                document.getElementById('save-input').value = "Loading new save state...";
+
+                if (typeof main === 'function') {
+                    main();
+                }
+            } catch (e) {
+                output("Error parsing JSON: " + e.message);
+            }
+        }
+
+        // Area Editor Logic
+        window.memoryAreas = {};
+
+        function populateAreaDropdown() {
+            const select = document.getElementById('area-select');
+            // Keep the first default option
+            select.innerHTML = '<option value="">Select an Area...</option>';
+            
+            if (window.gameLoaderJson && window.gameLoaderJson.areas) {
+                window.gameLoaderJson.areas.forEach(areaFile => {
+                    const opt = document.createElement('option');
+                    opt.value = areaFile;
+                    opt.textContent = areaFile;
+                    select.appendChild(opt);
+                });
+            }
+        }
+
+        async function loadAreaToEditor() {
+            const select = document.getElementById('area-select');
+            const filename = select.value;
+            const input = document.getElementById('area-input');
+            
+            if (!filename) {
+                input.value = "";
+                return;
+            }
+
+            if (window.memoryAreas[filename]) {
+                input.value = window.memoryAreas[filename];
+                return;
+            }
+
+            try {
+                const response = await fetch('./areas/' + filename);
+                if (response.ok) {
+                    const text = await response.text();
+                    window.memoryAreas[filename] = text;
+                    input.value = text;
+                } else {
+                    input.value = "Error: Could not load " + filename + " (Status: " + response.status + ")";
+                }
+            } catch(e) {
+                input.value = "Error: Network issue or file not found.";
+            }
+        }
+
+        function saveAreaFromEditor() {
+            const inputVal = document.getElementById('area-input').value;
+            const select = document.getElementById('area-select');
+            const filename = select.value;
+
+            if (!inputVal.trim() || !filename) {
+                output("No area selected or input is empty.");
+                return;
+            }
+
+            try {
+                const parsedArea = JSON.parse(inputVal);
+                window.memoryAreas[filename] = inputVal;
+                
+                // If game is running, inject into live memory
+                if (typeof allAreas !== 'undefined') {
+                    let updated = false;
+                    for (let i = 0; i < allAreas.length; i++) {
+                        if (allAreas[i].area && allAreas[i].area[0] === parsedArea.area[0]) {
+                            allAreas[i] = parsedArea;
+                            updated = true;
+                            break;
+                        }
+                    }
+                    if (updated) {
+                        output("Area [" + filename + "] successfully updated in live memory!");
+                    } else {
+                        allAreas.push(parsedArea);
+                        output("Area [" + filename + "] was valid JSON, injected as new area in live memory.");
+                    }
+                    // Immediately push live memory changes to the Save State menu
+                    updateSaveEditor();
+                }
+            } catch(e) {
+                output("Failed to apply area: Invalid JSON! (" + e.message + ")");
+            }
+        }
+
+        function createNewArea() {
+            let name = prompt("Enter new area filename (e.g. Cave.json):");
+            if (!name) return;
+            if (!name.endsWith(".json")) name += ".json";
+
+            if (!window.gameLoaderJson) {
+                window.gameLoaderJson = { areas: [], start: name };
+            }
+
+            if (window.gameLoaderJson.areas.includes(name)) {
+                alert("An area with that filename already exists!");
+                return;
+            }
+
+            const defaultJson = {
+                "area": [
+                    name.replace(".json", ""),
+                    "A mysterious new area.",
+                    [0],
+                    [0, 0],
+                    "StartRoom"
+                ],
+                "StartRoom": {
+                    "room": ["You are standing in a new room.", ["StartRoom"], 0],
+                    "characters": [],
+                    "items": [],
+                    "enemies": [],
+                    "structures": [],
+                    "events": []
+                }
+            };
+
+            const jsonString = JSON.stringify(defaultJson, null, 4);
+            window.memoryAreas[name] = jsonString;
+            window.gameLoaderJson.areas.push(name);
+
+            if (typeof allAreas !== 'undefined') {
+                allAreas.push(defaultJson);
+                updateSaveEditor();
+            }
+
+            populateAreaDropdown();
+            document.getElementById('area-select').value = name;
+            loadAreaToEditor();
+            
+            output("Created new area: " + name + " in local memory.");
+        }
+
+        function deleteSelectedArea() {
+            const select = document.getElementById('area-select');
+            const filename = select.value;
+
+            if (!filename) {
+                alert("Please select an area to delete first.");
+                return;
+            }
+
+            if (!confirm("Are you sure you want to delete " + filename + " from local memory?")) {
+                return;
+            }
+
+            delete window.memoryAreas[filename];
+
+            if (window.gameLoaderJson && window.gameLoaderJson.areas) {
+                window.gameLoaderJson.areas = window.gameLoaderJson.areas.filter(a => a !== filename);
+            }
+
+            if (typeof allAreas !== 'undefined') {
+                const areaName = filename.replace(".json", "");
+                for (let i = 0; i < allAreas.length; i++) {
+                    if (allAreas[i].area && allAreas[i].area[0] === areaName) {
+                        allAreas.splice(i, 1);
+                        break;
+                    }
+                }
+                updateSaveEditor();
+            }
+
+            populateAreaDropdown();
+            document.getElementById('area-input').value = "";
+            output("Deleted area: " + filename + " from local memory.");
+        }
+
+        // Auto-load loader.json on startup
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Add Tab key support for JSON textareas
+            const editors = [
+                document.getElementById('save-input'),
+                document.getElementById('json-input'),
+                document.getElementById('area-input')
+            ];
+            editors.forEach(editor => {
+                if (editor) {
+                    editor.addEventListener('keydown', function(e) {
+                        if (e.key === 'Tab') {
+                            e.preventDefault();
+                            const start = this.selectionStart;
+                            const end = this.selectionEnd;
+                            const indent = "    "; // 4 spaces for clean JSON formatting
+                            
+                            this.value = this.value.substring(0, start) + indent + this.value.substring(end);
+                            this.selectionStart = this.selectionEnd = start + indent.length;
+                        }
+                    });
+                }
+            });
+
+            try {
+                const response = await fetch('./loader.json');
+                if (response.ok) {
+                    const text = await response.text();
+                    document.getElementById('json-input').value = text;
+                    // Automatically start the game with this default loader!
+                    loadGameFromJson();
+                }
+            } catch (e) {
+                output("Warning: Could not automatically fetch loader.json.");
+            }
+        });
+    </script>
+</body>
+</html>
