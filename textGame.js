@@ -21,9 +21,9 @@ function listToText(listIn) {
     return(out);
 }
 
-function interact() {
+async function interact() {
     output();
-    var playerIn = input().split(" ");
+    var playerIn = (await input()).split(" ");
     output();
     try {
         var keyword = playerIn[0]
@@ -44,7 +44,7 @@ function interact() {
                 output("--", allAreas[currentArea][currentRoom]["room"][1][x]);
             }
             output("Structures:");
-            for (let x=0; x<allAreas[currentArea][currentRoom]["structures"]; x++) {
+            for (let x=0; x<allAreas[currentArea][currentRoom]["structures"].length; x++) {
                 output("--", allAreas[currentArea][currentRoom]["structures"][x][0]);
             }
         } else if (keyword == "goto") {
@@ -55,7 +55,7 @@ function interact() {
                         currentRoom = allAreas[currentArea][currentRoom]["room"][1][x];
                         output("You went to", currentRoom);
                         try {
-                            if (allAreas[currentArea][currentRoom]["room"][2] != None) {
+                            if (allAreas[currentArea][currentRoom]["room"][2] != null) {
                                 triggerEvent(allAreas[currentArea][currentRoom]["room"][2]);
                             }
                         } catch (Exception) {}
@@ -71,19 +71,19 @@ function interact() {
         } else if (keyword == "grab") {
             try {
                 var item = playerIn[1]
-                for (let x=0; x<allAreas[currentArea][currentRoom]["items"]; x++) {
+                for (let x=0; x<allAreas[currentArea][currentRoom]["items"].length; x++) {
                     if (allAreas[currentArea][currentRoom]["items"][x][0] == item) {
                         inventory[allAreas[currentArea][currentRoom]["items"][x][2]].push(allAreas[currentArea][currentRoom]["items"][x]);
                         output(allAreas[currentArea][currentRoom]["items"][x][0], "was added to your inventory!");
                         try {
-                            if (allAreas[currentArea][currentRoom]["items"][x][5]["on-grab"] != None) {
+                            if (allAreas[currentArea][currentRoom]["items"][x][5]["on-grab"] != null) {
                                 triggerEvent(allAreas[currentArea][currentRoom]["items"][x][5]["on-grab"]);
                             }
                         } catch(Exception) {}
                         allAreas[currentArea][currentRoom]["items"].splice(x, 1)
                         break;
                     }
-                    if (x == len(allAreas[currentArea][currentRoom]["items"])-1) {
+                    if (x == allAreas[currentArea][currentRoom]["items"].length-1) {
                         output("You searched, but found no such item.");
                     }
                 }
@@ -93,17 +93,17 @@ function interact() {
         } else if (keyword == "talkto") {
             try {
                 var person = playerIn[1];
-                for (let x=0; x<allAreas[currentArea][currentRoom]["characters"]; x++) {
+                for (let x=0; x<allAreas[currentArea][currentRoom]["characters"].length; x++) {
                     if (allAreas[currentArea][currentRoom]["characters"][x][0] == person) {
                         output(allAreas[currentArea][currentRoom]["characters"][x][0], ":", allAreas[currentArea][currentRoom]["characters"][x][2]);
                         try {
-                            if (allAreas[currentArea][currentRoom]["characters"][x][3] != None) {
+                            if (allAreas[currentArea][currentRoom]["characters"][x][3] != null) {
                                 triggerEvent(allAreas[currentArea][currentRoom]["characters"][x][3]);
                             }
                         } catch(Exception) {}
                         break;
                     }
-                    if (x == len(allAreas[currentArea][currentRoom]["characters"])-1) {
+                    if (x == allAreas[currentArea][currentRoom]["characters"].length-1) {
                         output("You searched, but were unable to find anyone by that name.");
                     }
                 }
@@ -115,16 +115,16 @@ function interact() {
                 output(formatInventory(playerIn[1]));
                 currentInventory = playerIn[1];
             } catch {
-                output("You checked everywhere, but you don't have an inventory by that name.\nYou do find the following inventory types:", listToText(inventory.keys()));
+                output("You checked everywhere, but you don't have an inventory by that name.\nYou do find the following inventory types:", listToText(Object.keys(inventory)));
             }
         } else if (keyword == "inspect") {
             try {
                 var structure = playerIn[1];
-                for (let x=0; x<allAreas[currentArea][currentRoom]["structures"]; x++) {
+                for (let x=0; x<allAreas[currentArea][currentRoom]["structures"].length; x++) {
                     if (allAreas[currentArea][currentRoom]["structures"][x][0] == structure) {
                         output(allAreas[currentArea][currentRoom]["structures"][x][1]);
                         try {
-                            if (allAreas[currentArea][currentRoom]["structures"][x][2] != None) {
+                            if (allAreas[currentArea][currentRoom]["structures"][x][2] != null) {
                                 triggerEvent(allAreas[currentArea][currentRoom]["structures"][x][2]);
                             }
                         } catch(Exception) {}
@@ -139,16 +139,16 @@ function interact() {
             }
         } else if (keyword == "use") {
             try {
-                if (0 == len(inventory[currentInventory])) {
+                if (0 == inventory[currentInventory].length) {
                     output("You couldn't find any items in your", currentInventory, "inventory.");
                 } else {
                     var item = playerIn[1]
                     for (let x=0; x<inventory[currentInventory].length; x++) {
                         if (inventory[currentInventory][x][0] == item) {
-                            triggerEvent(inventory[currentInventory][x][4]["on-use"]);
+                            triggerEvent(inventory[currentInventory][x][5]["on-use"]);
                             break;
                         }
-                        if (x == len(inventory[currentInventory])-1) {
+                        if (x == inventory[currentInventory].length-1) {
                             output("You couldn't find an item like that in your", currentInventory, "inventory.");
                         }
                     }
@@ -205,7 +205,7 @@ function triggerEvent(eventKey) {
                                 }
                             }
                         } else {
-                            for (let z=0; z<allAreas[currentArea][location][key]; z++) {
+                            for (let z=0; z<allAreas[currentArea][location][key].length; z++) {
                                 if (allAreas[currentArea][location][key][z][0] == effect) {
                                     allAreas[currentArea][location][key].splice(z, 1);
                                 }
@@ -267,7 +267,7 @@ function triggerEvent(eventKey) {
     }
 }
     
-function combat() {
+async function combat() {
     var enemy = allAreas[currentArea][currentRoom]["enemies"][0];
     var health = maxHealth;
     var enemyHealth = enemy[2];
@@ -276,8 +276,8 @@ function combat() {
         var enemyTempAttack = enemy[3];
         var playerAttack = 0;
         var playerTempAttack = 0;
-        output("\nYou are being attacked by a " + enemy[0] + "!\nHealth: "+str(enemyHealth)+"\n\nHealth: " + str(health) + "\na - Attack\nb - Block");
-        var playerIn = input(); //Player input
+        output("\nYou are being attacked by a " + enemy[0] + "!\nHealth: "+String(enemyHealth)+"\n\nHealth: " + String(health) + "\na - Attack\nb - Block");
+        var playerIn = await input(); //Player input
         var mode = 0;
         if (playerIn == "a" || playerIn == "Attack" || playerIn == "attack") {
             mode = 1;
@@ -288,7 +288,7 @@ function combat() {
         } else {
             output("You were too confused to do anything!");
         }
-        playerIn = input(); //Player input
+        playerIn = await input(); //Player input
         for (let x=0; x<inventory[weaponInventories[(mode+1)%2]].length; x++) {
             if (playerIn == inventory[weaponInventories[(mode+1)%2]][x][0]) {
                 playerAttack = inventory[weaponInventories[(mode+1)%2]][x][3];
@@ -298,8 +298,8 @@ function combat() {
                 } else {
                     playerTempAttack = 0;
                 }
-                if (enemyTempAttack >= inventory[weaponInventories[(mode+1)%2]][x][3]) {
-                    enemyTempAttack -= inventory[weaponInventories[(mode+1)%2]][x][3];
+                if (enemyTempAttack >= inventory[weaponInventories[(mode+1)%2]][x][4]) {
+                    enemyTempAttack -= inventory[weaponInventories[(mode+1)%2]][x][4];
                 }
                 else {
                     enemyTempAttack = 0;
@@ -331,7 +331,7 @@ function combat() {
     if (enemyHealth <= 0) {
         output("You destroyed the", enemy[0] + "!");
         try {
-            if (allAreas[currentArea][currentRoom]["enemies"][0][5] != None) {
+            if (allAreas[currentArea][currentRoom]["enemies"][0][5] != null) {
                 triggerEvent(allAreas[currentArea][currentRoom]["enemies"][0][5]);
             }
         } catch(Exception) {}
@@ -341,33 +341,47 @@ function combat() {
     }
 }
 
-function start() {
+async function start() {
     output("\nWelcome to Text Game, type \"help\" for usable commands.\n");
     try {
-        var loader = fetch("./loader.json").then(response => {return(response.json());})
+        let loader;
+        if (window.gameLoaderJson) {
+            loader = window.gameLoaderJson;
+        } else {
+            const response = await fetch("./loader.json");
+            loader = await response.json();
+        }
+
+        allAreas = []; // Reset all areas
+        
         for (let x=0; x<loader["areas"].length; x++) {
-            try { //Try normal folder typing
-                allAreas.push(fetch("./areas\\" + loader["areas"][x]).then(response => {return(response.json());}));
+            let areaData;
+            try { //Try relative path
+                const res = await fetch("./areas/" + loader["areas"][x]);
+                if (!res.ok) throw new Error("Status: " + res.status);
+                areaData = await res.json();
+                allAreas.push(areaData);
                 if (loader["areas"][x] == loader["start"]) {
                     currentArea = allAreas.length-1;
                 }
             } catch(Exception) {
-                try { //Try alt folder typing
-                    allAreas.push(fetch("./areas/" + loader["areas"][x]).then(response => {return(response.json());}));
+                try { //Try absolute path fallback
+                    const res = await fetch("/source/areas/" + loader["areas"][x]);
+                    if (!res.ok) throw new Error("Status: " + res.status);
+                    areaData = await res.json();
+                    allAreas.push(areaData);
                     if (loader["areas"][x] == loader["start"]) {
-                        currentArea = x;
+                        currentArea = allAreas.length-1;
                     }
-                } catch (Exception) {
-                    output(loader["areas"][x], "in your loader.json was not added");
+                } catch (FallbackException) {
+                    output(loader["areas"][x], "could not be loaded from source/areas. Error:", FallbackException.message);
                 }
             }
         }
         try {
             currentInventory = allAreas[currentArea]["area"][2][0];
             for (let x=0; x<allAreas[currentArea]["area"][2].length; x++) {
-                try {
-                    inventory[allAreas[currentArea]["area"][2][x]];
-                } catch {    
+                if (!inventory[allAreas[currentArea]["area"][2][x]]) {
                     inventory[allAreas[currentArea]["area"][2][x]] = [];
                 }
             }
@@ -375,11 +389,11 @@ function start() {
             output("You have entered:", allAreas[currentArea]["area"][0]);
             output(allAreas[currentArea][currentRoom]["room"][0]);
         } catch(Exception) {
-            output("No area files were found")
+            output("No area files were found or loaded successfully.");
             return(1);
         }
     } catch (Exception) {
-        output("Your loader.json file could not be found");
+        output("Your loader.json file could not be found or was invalid.");
         return(1);
     }
     return(0);
@@ -452,11 +466,18 @@ function loadFile() {
     return;
 }
 
-function update() {
-    if (allAreas[currentArea][currentRoom]["enemies"].length > 0) {
-        combat();
+async function update() {
+    var hasEnemies = false;
+    try {
+        if (allAreas && allAreas.length > 0 && allAreas[currentArea] && allAreas[currentArea][currentRoom] && allAreas[currentArea][currentRoom]["enemies"] && allAreas[currentArea][currentRoom]["enemies"].length > 0) {
+            hasEnemies = true;
+        }
+    } catch(e) {}
+
+    if (hasEnemies) {
+        await combat();
     } else {
-        interact();
+        await interact();
     }
     return(0);
 }
@@ -465,12 +486,10 @@ function end(errorCode) {
     output("Error:", errorCode);
 }
 
-function main() {
-    var num = start();
+async function main() {
+    var num = await start();
     while(num == 0) {
-        num = update();
+        num = await update();
     }
     end(num);
 }
-
-main()
